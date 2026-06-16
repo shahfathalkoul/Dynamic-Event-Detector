@@ -103,8 +103,8 @@ def plot_ablation_comparison(results_path: str | None = None) -> go.Figure:
         title="Topic Coherence Score (C_v) — Higher is Better",
         yaxis_title="Coherence Score",
         height=420,
-        yaxis=dict(range=[0, 0.6]),
     )
+    fig.update_yaxes(range=[0, 0.6])
     
     return fig
 

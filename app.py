@@ -484,12 +484,8 @@ with tab3:
             title="Topic Coherence Score (C_v) — Higher is Better",
             yaxis_title="Coherence Score",
             height=420,
-            yaxis=dict(
-                range=[0, 0.6],
-                gridcolor='#2d3748',
-                zerolinecolor='#2d3748',
-            ),
         )
+        fig_ablation.update_yaxes(range=[0, 0.6])
         # Add improvement annotation
         fig_ablation.add_annotation(
             x='Hybrid (Proposed)', y=0.52,
