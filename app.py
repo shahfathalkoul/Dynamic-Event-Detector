@@ -209,6 +209,8 @@ with st.sidebar:
 # ─────────────────────────────────────────────────────────────
 _lemmatizer = WordNetLemmatizer()
 _stop_words = set(stopwords.words('english'))
+_custom_stops = {'new', 'say', 'said', 'make', 'one', 'would', 'could', 'also', 'get', 'like', 'time', 'year', 'day', 'first', 'people', 'two', 'know', 'want', 'even', 'take'}
+_stop_words = _stop_words.union(_custom_stops)
 
 
 def clean_text(text: str) -> str:
@@ -234,14 +236,14 @@ def load_data():
 def train_model():
     """Train an LDA model on a sample of the real news dataset."""
     df = load_data()
-    df_sample = df.sample(n=min(5000, len(df)), random_state=42).copy()
+    df_sample = df.sample(n=min(10000, len(df)), random_state=42).copy()
     docs = df_sample['clean_text'].fillna('').tolist()
 
     vectorizer = CountVectorizer(max_features=2000, min_df=5, max_df=0.9)
     dtm = vectorizer.fit_transform(docs)
 
     lda = LatentDirichletAllocation(
-        n_components=10,
+        n_components=15,
         random_state=42,
         max_iter=15,
     )
