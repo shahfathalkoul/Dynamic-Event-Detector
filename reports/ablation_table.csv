@@ -1,0 +1,4 @@
+Model,Type,Coherence,Temporal,GDELT
+A — LDA,Advanced ML,0.3573,No,No
+B — BERTopic,Deep Learning,0.4781,No,No
+C — Hybrid,Hybrid,0.4981,Yes,Yes
