@@ -17,6 +17,8 @@
 
 A hybrid NLP system that **detects emerging topics** from 200K+ news articles and determines whether a trend corresponds to a **real-world event** or a **short-lived viral topic**. The system combines traditional topic modeling (LDA), deep learning-based topic modeling (BERTopic), and a novel hybrid approach incorporating **semantic velocity** and **external event verification** via the GDELT database.
 
+> **Enterprise AI upgrade:** See the [Autonomous News Intelligence Platform engineering design](docs/enterprise_news_intelligence_platform.md) for a production-grade roadmap that transforms this research pipeline into an agentic AI system with RAG, tool calling, long-term memory, LangGraph workflows, human review, executive reporting, and a modern web dashboard.
+
 ### Key Results
 
 | Model | Coherence (C_v) | Temporal Tracking | GDELT Verification |
@@ -95,12 +97,49 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+### Agentic Platform Backend
+
+This repo now includes the first production-oriented platform layer described in the enterprise design document:
+
+- `packages/schemas/` contains typed domain records for articles, topic clusters, candidate events, evidence, agent decisions, and reports.
+- `services/topic_discovery/` wraps the existing NLP research pipeline as a service-oriented Topic Discovery Engine.
+- `services/retrieval/` provides a dependency-light hybrid retriever that can later be backed by Qdrant and PostgreSQL full-text search.
+- `services/memory/` provides searchable long-term memory primitives for events, reflections, and analyst feedback.
+- `services/tools/` provides a retrying tool gateway for future external API calls.
+- `services/agents/` provides a deterministic event-intelligence workflow that maps directly to future LangGraph nodes.
+- `services/storage/` provides durable SQLite persistence that mirrors the future PostgreSQL repository boundary.
+- `apps/api/` contains a FastAPI backend scaffold with event detection, event analysis, and chat retrieval endpoints.
+- `tests/` contains regression tests for the upgraded platform layer.
+
+Run the platform tests:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+After installing the expanded backend dependencies, start the API:
+
+```bash
+uvicorn apps.api.main:app --reload
+```
+
 ---
 
 ## Project Structure
 
 ```
 Dynamic-Event-Detector/
+├── apps/
+│   └── api/                         # FastAPI backend scaffold
+├── packages/
+│   └── schemas/                     # Shared typed platform records
+├── services/
+│   ├── agents/                      # Event intelligence workflow
+│   ├── memory/                      # Long-term memory prototype
+│   ├── retrieval/                   # Hybrid retrieval prototype
+│   ├── storage/                     # SQLite persistence adapter
+│   ├── tools/                       # Tool-calling gateway
+│   └── topic_discovery/             # Service wrapper around existing NLP pipeline
 ├── app.py                          # Streamlit multi-tab dashboard
 ├── requirements.txt                # Pinned dependencies
 ├── LICENSE                         # MIT License

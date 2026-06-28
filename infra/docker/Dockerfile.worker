@@ -1,0 +1,30 @@
+# ── Build stage ──────────────────────────────────────────────────────
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+RUN pip install --no-cache-dir --upgrade pip
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ── Runtime stage ────────────────────────────────────────────────────
+FROM python:3.12-slim AS runtime
+
+LABEL description="Celery worker for the News Intelligence Platform"
+
+RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
+
+WORKDIR /app
+
+COPY --from=builder /install /usr/local
+
+COPY packages/ packages/
+COPY services/ services/
+COPY apps/ apps/
+COPY src/ src/
+
+RUN mkdir -p /app/data && chown -R appuser:appuser /app
+
+USER appuser
+
+CMD ["celery", "-A", "services.workers.celery_app", "worker", "--loglevel=info", "--concurrency=4"]
