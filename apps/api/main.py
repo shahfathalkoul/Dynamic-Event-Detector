@@ -9,12 +9,17 @@ try:
 except ModuleNotFoundError:  # Keeps imports testable before backend deps are installed.
     FastAPI = None  # type: ignore[assignment]
 
+import logging
+from typing import Any
+from packages.common.config import PlatformSettings
 from packages.schemas import Article
 from services.agents import EventIntelligenceWorkflow
 from services.memory import MemoryStore
 from services.retrieval import HybridRetriever
 from services.storage import SQLiteRepository
 from services.topic_discovery import TopicDiscoveryEngine
+
+logger = logging.getLogger(__name__)
 
 
 def _require_fastapi() -> None:
@@ -25,23 +30,46 @@ def _require_fastapi() -> None:
         )
 
 
-def create_app(repository: SQLiteRepository | None = None):
+def create_app(repository: Any | None = None):
     """Create the platform API.
 
-    The app uses in-memory stores for the current upgrade milestone. The same
-    routes can later be backed by PostgreSQL, Redis, Qdrant, and LangGraph.
+    Supports dynamic injection of production backends (PostgreSQL, Qdrant,
+    LangGraph) when running in production environment or configured via env vars.
     """
     _require_fastapi()
+    settings = PlatformSettings()
     app = FastAPI(
         title="Autonomous News Intelligence Platform",
-        version="0.1.0",
+        version="1.0.0",
         description="Agentic AI layer around the Dynamic Trend & Event Detector.",
     )
 
-    retriever = HybridRetriever()
+    if repository is None:
+        if settings.environment == "production" or settings.database_url.startswith("postgresql"):
+            try:
+                from services.storage import PostgresRepository, get_engine, make_session_factory
+                engine = get_engine(settings.database_url)
+                repository = PostgresRepository(make_session_factory(engine))
+                logger.info("Connected API to production PostgresRepository")
+            except Exception as exc:
+                logger.warning("Failed to initialize PostgresRepository (%s), falling back to SQLiteRepository", exc)
+                repository = SQLiteRepository()
+        else:
+            repository = SQLiteRepository()
+
+    if settings.environment == "production" or settings.qdrant_url != "http://localhost:6333":
+        try:
+            from services.retrieval import QdrantRetriever
+            retriever = QdrantRetriever()
+            logger.info("Connected API to production QdrantRetriever")
+        except Exception as exc:
+            logger.warning("Failed to initialize QdrantRetriever (%s), falling back to HybridRetriever", exc)
+            retriever = HybridRetriever()
+    else:
+        retriever = HybridRetriever()
+
     memory = MemoryStore()
     topic_engine = TopicDiscoveryEngine()
-    repository = repository or SQLiteRepository()
 
     @app.get("/health")
     def health() -> dict:
